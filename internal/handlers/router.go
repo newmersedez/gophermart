@@ -27,6 +27,7 @@ func NewRouter(storage *storage.Storage, logger *slog.Logger) *Router {
 func (rt *Router) Routes(logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(middleware.GzipMiddleware)
 	r.Use(middleware.RequestLoggerMiddleware(logger))
 
 	r.Route("/api/user", func(r chi.Router) {

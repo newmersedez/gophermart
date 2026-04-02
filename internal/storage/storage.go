@@ -43,7 +43,9 @@ func runMigrations(dsn string) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	defer func() { 
+		_, _ = m.Close() 
+	}()
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
@@ -159,7 +161,7 @@ func (s *Storage) GetBalance(ctx context.Context, userID uuid.UUID) (*models.Bal
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	var current float64
 	err = tx.QueryRow(ctx, `SELECT COALESCE(SUM(accrual), 0) FROM orders WHERE user_id = $1 AND status = $2`, userID, models.OrderStatusProcessed).Scan(&current)
@@ -188,7 +190,7 @@ func (s *Storage) CreateWithdrawal(ctx context.Context, userID uuid.UUID, order 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	balance, err := s.GetBalance(ctx, userID)
 	if err != nil {

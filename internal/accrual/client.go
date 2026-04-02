@@ -47,7 +47,7 @@ func (c *Client) GetOrderAccrual(ctx context.Context, orderNumber string) (*Accr
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
