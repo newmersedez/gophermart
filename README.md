@@ -1,8 +1,9 @@
 # Gophermart - Накопительная система лояльности
 
 [![Tests & Coverage](https://github.com/newmersedez/gophermart/actions/workflows/coverage.yml/badge.svg)](https://github.com/newmersedez/gophermart/actions/workflows/coverage.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/newmersedez/gophermart/main/.github/badges/coverage.json)](https://github.com/newmersedez/gophermart/blob/main/COVERAGE.md)
 [![golangci-lint](https://github.com/newmersedez/gophermart/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/newmersedez/gophermart/actions/workflows/golangci-lint.yml)
+
+## 📊 Coverage: AUTO_COVERAGE% AUTO_STATUS
 
 Дипломный проект курса «Go-разработчик» от Яндекс Практикум.
 
