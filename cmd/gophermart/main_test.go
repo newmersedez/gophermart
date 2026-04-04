@@ -7,7 +7,6 @@ import (
 )
 
 func TestRunWithoutDatabaseURI(t *testing.T) {
-	// Сохраним оригинальное значение
 	originalURI := os.Getenv("DATABASE_URI")
 	defer func() {
 		if originalURI != "" {
@@ -17,10 +16,8 @@ func TestRunWithoutDatabaseURI(t *testing.T) {
 		}
 	}()
 
-	// Сбросим флаги
 	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
 
-	// Убираем DATABASE_URI для теста
 	os.Unsetenv("DATABASE_URI")
 
 	err := run()
@@ -35,7 +32,6 @@ func TestRunWithoutDatabaseURI(t *testing.T) {
 }
 
 func TestRunWithInvalidDatabaseURI(t *testing.T) {
-	// Сохраним оригинальное значение
 	originalURI := os.Getenv("DATABASE_URI")
 	defer func() {
 		if originalURI != "" {
@@ -45,10 +41,8 @@ func TestRunWithInvalidDatabaseURI(t *testing.T) {
 		}
 	}()
 
-	// Сбросим флаги
 	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
 
-	// Устанавливаем невалидный DATABASE_URI
 	os.Setenv("DATABASE_URI", "invalid://uri")
 
 	err := run()
@@ -56,7 +50,6 @@ func TestRunWithInvalidDatabaseURI(t *testing.T) {
 		t.Error("Expected error with invalid DATABASE_URI, got nil")
 	}
 
-	// Ожидаем ошибку инициализации хранилища
 	expectedSubstring := "failed to initialize storage"
 	if err.Error() == "" || len(err.Error()) < len(expectedSubstring) {
 		t.Errorf("Expected error message to contain %q, got %q", expectedSubstring, err.Error())
