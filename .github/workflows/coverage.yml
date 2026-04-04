@@ -91,29 +91,12 @@ jobs:
           echo "" >> COVERAGE.md
           echo "_Last updated: $(date)_" >> COVERAGE.md
           
-      - name: Update README badge
-        run: |
-          COVERAGE=${{ steps.coverage.outputs.percentage }}
-          
-          # Determine status emoji
-          if (( $(echo "$COVERAGE > 80" | bc -l) )); then
-            STATUS="🟢"
-          elif (( $(echo "$COVERAGE > 60" | bc -l) )); then
-            STATUS="⚠️"
-          else
-            STATUS="❌"
-          fi
-          
-          # Update README.md with current coverage
-          sed -i "s/AUTO_COVERAGE%/${COVERAGE}%/g" README.md
-          sed -i "s/AUTO_STATUS/${STATUS}/g" README.md
-          
       - name: Commit coverage files
         if: github.event_name == 'push'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .github/badges/coverage.json COVERAGE.md README.md || true
+          git add .github/badges/coverage.json COVERAGE.md || true
           git diff --staged --quiet || git commit -m "Update coverage: ${{ steps.coverage.outputs.percentage }}% [skip ci]" || true
           git push || true
           
