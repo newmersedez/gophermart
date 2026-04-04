@@ -1,0 +1,34 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 60%
+        threshold: 2%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 65%
+        threshold: 2%
+        if_ci_failed: error
+  
+  round: down
+  precision: 1
+
+ignore:
+  - "internal/mocks/**"
+  - "internal/**/mocks/**"
+  - "**/*_mock.go"
+  - "**/*.pb.go" 
+  - "**/mock_*.go"
+  - "cmd/**/main.go"
+  - "**/*_test.go"
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+github_checks:
+  annotations: true
