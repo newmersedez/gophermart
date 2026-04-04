@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"gophermart/internal/accrual"
-	"gophermart/internal/config"
-	"gophermart/internal/handlers"
-	"gophermart/internal/storage"
-	"gophermart/internal/worker"
+	"gophermart/internal/app/handlers"
+	"gophermart/internal/app/services/worker"
+	"gophermart/internal/infrastructure/accrual"
+	"gophermart/internal/infrastructure/config"
+	"gophermart/internal/infrastructure/storage"
 )
 
 func main() {

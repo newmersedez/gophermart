@@ -10,7 +10,7 @@ build:
 	go build -o cmd/gophermart/gophermart cmd/gophermart/main.go
 
 # Запуск приложения
-run:
+run: build
 	./cmd/gophermart/gophermart
 
 # Запуск тестов
@@ -19,15 +19,10 @@ test:
 
 # Покрытие тестами (с исключением моков)
 coverage:
-	@echo "Running tests with coverage (excluding mocks)..."
+	@echo "Running tests with coverage..."
 	@go test -coverprofile=coverage.out $$(go list ./... | grep -v '/mocks')
-	@echo "\n=== Coverage (excluding mocks) ==="
+	@echo "\n=== Coverage ==="
 	@go tool cover -func=coverage.out | tail -1
-
-# Генерация HTML отчета покрытия
-coverage-html: coverage
-	@go tool cover -html=coverage.out -o coverage.html
-	@echo "HTML coverage report: coverage.html"
 
 # Запуск линтера
 lint:
@@ -41,7 +36,3 @@ mocks:
 clean:
 	rm -f coverage.out coverage_filtered.out coverage.html
 	rm -f cmd/gophermart/gophermart
-
-# Запуск всех проверок
-check: test lint
-	@echo "All checks passed!"
