@@ -13,11 +13,11 @@ import (
 )
 
 type BalanceHandler struct {
-	storage *storage.Storage
+	storage storage.StorageInterface
 	logger  *slog.Logger
 }
 
-func NewBalanceHandler(storage *storage.Storage, logger *slog.Logger) *BalanceHandler {
+func NewBalanceHandler(storage storage.StorageInterface, logger *slog.Logger) *BalanceHandler {
 	return &BalanceHandler{
 		storage: storage,
 		logger:  logger,

@@ -11,13 +11,13 @@ import (
 )
 
 type Worker struct {
-	storage       *storage.Storage
-	accrualClient *accrual.Client
+	storage       storage.StorageInterface
+	accrualClient accrual.AccrualClient
 	logger        *slog.Logger
 	interval      time.Duration
 }
 
-func NewWorker(storage *storage.Storage, accrualClient *accrual.Client, logger *slog.Logger) *Worker {
+func NewWorker(storage storage.StorageInterface, accrualClient accrual.AccrualClient, logger *slog.Logger) *Worker {
 	return &Worker{
 		storage:       storage,
 		accrualClient: accrualClient,

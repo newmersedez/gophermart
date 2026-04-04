@@ -1,5 +1,9 @@
 # Gophermart - Накопительная система лояльности
 
+[![Tests & Coverage](https://github.com/newmersedez/gophermart/actions/workflows/coverage.yml/badge.svg)](https://github.com/newmersedez/gophermart/actions/workflows/coverage.yml)
+[![golangci-lint](https://github.com/newmersedez/gophermart/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/newmersedez/gophermart/actions/workflows/golangci-lint.yml)
+[![codecov](https://codecov.io/gh/newmersedez/gophermart/branch/main/graph/badge.svg)](https://codecov.io/gh/newmersedez/gophermart)
+
 Дипломный проект курса «Go-разработчик» от Яндекс Практикум.
 
 ## Описание
@@ -113,6 +117,70 @@ gophermarttest \
 - `accrual_darwin_arm64` - macOS Apple Silicon
 - `accrual_linux_amd64` - Linux
 - `accrual_windows_amd64.exe` - Windows
+
+## Тестирование и покрытие кода
+
+### Запуск unit-тестов
+
+```bash
+# Запустить все тесты
+make test
+
+# Или напрямую через go
+go test -v -race ./...
+```
+
+### Проверка покрытия тестами
+
+```bash
+# Покрытие в консоли (исключая моки)
+make coverage
+
+# Генерация HTML отчета
+make coverage-html
+
+# Или через скрипт
+./scripts/coverage.sh html
+```
+
+**Примечание:** Все команды автоматически исключают папки `mocks` из расчета покрытия.
+
+### Интеграционные тесты storage
+
+Тесты для пакета `internal/storage` требуют запущенную базу данных PostgreSQL. Локально они будут пропущены, если база данных недоступна.
+
+Для запуска интеграционных тестов:
+
+```bash
+# Запустите PostgreSQL через Docker
+docker run -d \
+  --name gophermart-test-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=test \
+  -e POSTGRES_DB=gophermart_test \
+  -p 5432:5432 \
+  postgres:15
+
+# Установите переменную окружения
+export TEST_DATABASE_URI="postgres://postgres:test@localhost:5432/gophermart_test?sslmode=disable"
+
+# Запустите тесты
+go test -v ./internal/storage
+```
+
+В GitHub Actions интеграционные тесты запускаются автоматически с PostgreSQL service container.
+
+### Доступные Make команды
+
+- `make deps` - установка зависимостей
+- `make build` - сборка проекта
+- `make test` - запуск тестов
+- `make coverage` - проверка покрытия тестами
+- `make coverage-html` - генерация HTML отчета покрытия
+- `make lint` - проверка кода линтером
+- `make mocks` - генерация моков через mockery
+- `make check` - запуск всех проверок (тесты + линтер)
+- `make clean` - очистка артефактов
 
 ## Архитектура проекта
 

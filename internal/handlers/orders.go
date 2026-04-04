@@ -16,11 +16,11 @@ import (
 )
 
 type OrderHandler struct {
-	storage *storage.Storage
+	storage storage.StorageInterface
 	logger  *slog.Logger
 }
 
-func NewOrderHandler(storage *storage.Storage, logger *slog.Logger) *OrderHandler {
+func NewOrderHandler(storage storage.StorageInterface, logger *slog.Logger) *OrderHandler {
 	return &OrderHandler{
 		storage: storage,
 		logger:  logger,

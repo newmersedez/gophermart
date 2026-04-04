@@ -13,11 +13,11 @@ import (
 )
 
 type AuthHandler struct {
-	storage *storage.Storage
+	storage storage.StorageInterface
 	logger  *slog.Logger
 }
 
-func NewAuthHandler(storage *storage.Storage, logger *slog.Logger) *AuthHandler {
+func NewAuthHandler(storage storage.StorageInterface, logger *slog.Logger) *AuthHandler {
 	return &AuthHandler{
 		storage: storage,
 		logger:  logger,

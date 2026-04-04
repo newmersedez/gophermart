@@ -1,0 +1,18 @@
+template: testify
+packages:
+    gophermart/internal/storage:
+        config:
+            dir: "{{.InterfaceDir}}/mocks"
+            filename: "mock_{{.InterfaceName | snakecase}}.go"
+            pkgname: "mocks"
+            structname: "Mock{{.InterfaceName}}"
+        interfaces:
+            StorageInterface:
+    gophermart/internal/accrual:
+        config:
+            dir: "{{.InterfaceDir}}/mocks"
+            filename: "mock_{{.InterfaceName | snakecase}}.go"
+            pkgname: "mocks"
+            structname: "Mock{{.InterfaceName}}"
+        interfaces:
+            AccrualClient:

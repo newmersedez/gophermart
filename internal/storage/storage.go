@@ -16,6 +16,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// StorageInterface определяет интерфейс для работы с хранилищем
+type StorageInterface interface {
+	Close()
+	CreateUser(ctx context.Context, login, passwordHash string) (uuid.UUID, error)
+	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
+	CreateOrder(ctx context.Context, number string, userID uuid.UUID) error
+	GetOrderByNumber(ctx context.Context, number string) (*models.Order, error)
+	GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error)
+	UpdateOrderStatus(ctx context.Context, number, status string, accrual *float64) error
+	GetPendingOrders(ctx context.Context) ([]models.Order, error)
+	GetBalance(ctx context.Context, userID uuid.UUID) (*models.Balance, error)
+	CreateWithdrawal(ctx context.Context, userID uuid.UUID, order string, sum float64) error
+	GetWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error)
+}
+
 type Storage struct {
 	pool   *pgxpool.Pool
 	logger *slog.Logger
@@ -43,8 +58,8 @@ func runMigrations(dsn string) error {
 	if err != nil {
 		return err
 	}
-	defer func() { 
-		_, _ = m.Close() 
+	defer func() {
+		_, _ = m.Close()
 	}()
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {

@@ -1,0 +1,23 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 1%
+    patch:
+      default:
+        target: 65%
+  
+ignore:
+  - "internal/mocks/**"
+  - "internal/**/mocks/**"
+  - "**/*_mock.go"
+  - "**/*.pb.go"
+  - "**/mock_*.go"
+  - "cmd/**"
+  - "urlshort/**"
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false

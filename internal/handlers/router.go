@@ -16,7 +16,7 @@ type Router struct {
 	balanceHandler *BalanceHandler
 }
 
-func NewRouter(storage *storage.Storage, logger *slog.Logger) *Router {
+func NewRouter(storage storage.StorageInterface, logger *slog.Logger) *Router {
 	return &Router{
 		authHandler:    NewAuthHandler(storage, logger),
 		orderHandler:   NewOrderHandler(storage, logger),

@@ -13,6 +13,12 @@ import (
 	"gophermart/internal/models"
 )
 
+// AccrualClient определяет интерфейс для работы с системой accrual
+type AccrualClient interface {
+	GetOrderAccrual(ctx context.Context, orderNumber string) (*AccrualResponse, error)
+	MapStatus(accrualStatus string) string
+}
+
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
