@@ -88,7 +88,7 @@ func (s *Storage) CreateUser(ctx context.Context, login, passwordHash string) (u
 func (s *Storage) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
 	query := `SELECT id, login, password_hash, created_at FROM users WHERE login = $1`
 
-	var user models.User
+	user := models.NewUser("", "")
 	err := s.pool.QueryRow(ctx, query, login).Scan(&user.ID, &user.Login, &user.PasswordHash, &user.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -97,7 +97,7 @@ func (s *Storage) GetUserByLogin(ctx context.Context, login string) (*models.Use
 		return nil, err
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (s *Storage) CreateOrder(ctx context.Context, number string, userID uuid.UUID) error {
@@ -110,7 +110,7 @@ func (s *Storage) CreateOrder(ctx context.Context, number string, userID uuid.UU
 func (s *Storage) GetOrderByNumber(ctx context.Context, number string) (*models.Order, error) {
 	query := `SELECT number, user_id, status, accrual, uploaded_at FROM orders WHERE number = $1`
 
-	var order models.Order
+	order := models.NewOrder("", uuid.Nil)
 	err := s.pool.QueryRow(ctx, query, number).Scan(&order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -119,7 +119,7 @@ func (s *Storage) GetOrderByNumber(ctx context.Context, number string) (*models.
 		return nil, err
 	}
 
-	return &order, nil
+	return order, nil
 }
 
 func (s *Storage) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error) {
@@ -133,11 +133,11 @@ func (s *Storage) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models
 
 	var orders []models.Order
 	for rows.Next() {
-		var order models.Order
+		order := models.NewOrder("", uuid.Nil)
 		if err := rows.Scan(&order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
 			return nil, err
 		}
-		orders = append(orders, order)
+		orders = append(orders, *order)
 	}
 
 	return orders, rows.Err()
@@ -161,11 +161,11 @@ func (s *Storage) GetPendingOrders(ctx context.Context) ([]models.Order, error) 
 
 	var orders []models.Order
 	for rows.Next() {
-		var order models.Order
+		order := models.NewOrder("", uuid.Nil)
 		if err := rows.Scan(&order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
 			return nil, err
 		}
-		orders = append(orders, order)
+		orders = append(orders, *order)
 	}
 
 	return orders, rows.Err()
@@ -194,10 +194,9 @@ func (s *Storage) GetBalance(ctx context.Context, userID uuid.UUID) (*models.Bal
 		return nil, err
 	}
 
-	return &models.Balance{
-		Current:   current - withdrawn,
-		Withdrawn: withdrawn,
-	}, nil
+	balance := models.NewBalance(current-withdrawn, withdrawn)
+
+	return balance, nil
 }
 
 func (s *Storage) CreateWithdrawal(ctx context.Context, userID uuid.UUID, order string, sum float64) error {
@@ -236,11 +235,11 @@ func (s *Storage) GetWithdrawals(ctx context.Context, userID uuid.UUID) ([]model
 
 	var withdrawals []models.Withdrawal
 	for rows.Next() {
-		var w models.Withdrawal
+		w := models.NewWithdrawal("", 0, uuid.Nil)
 		if err := rows.Scan(&w.Order, &w.Sum, &w.UserID, &w.ProcessedAt); err != nil {
 			return nil, err
 		}
-		withdrawals = append(withdrawals, w)
+		withdrawals = append(withdrawals, *w)
 	}
 
 	return withdrawals, rows.Err()

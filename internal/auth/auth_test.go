@@ -243,3 +243,35 @@ func TestGenerateRandomString_Uniqueness(t *testing.T) {
 		t.Error("GenerateRandomString() generated identical strings")
 	}
 }
+
+func TestValidateToken_ExpiredToken(t *testing.T) {
+	// Создаем токен с экспирацией в прошлом
+	claims := Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-24 * time.Hour)), // expired
+		},
+		UserID: uuid.New(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, _ := token.SignedString(jwtSecret)
+
+	_, err := ValidateToken(tokenString)
+	if err == nil {
+		t.Error("Expected error for expired token, got nil")
+	}
+}
+
+func TestValidateToken_InvalidTokenStructure(t *testing.T) {
+	// Test with token that has invalid claims structure
+	invalidToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp":    time.Now().Add(time.Hour).Unix(),
+		"userID": "not-a-uuid", // Invalid UUID format
+	})
+	tokenString, _ := invalidToken.SignedString(jwtSecret)
+
+	_, err := ValidateToken(tokenString)
+	if err == nil {
+		t.Error("Expected error for token with invalid UUID, got nil")
+	}
+}

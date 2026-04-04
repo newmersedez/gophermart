@@ -163,3 +163,138 @@ func TestClose(t *testing.T) {
 		storage.Close()
 	})
 }
+
+func TestUpdateOrderStatus(t *testing.T) {
+	storage := setupTestStorage(t)
+	defer storage.Close()
+
+	ctx := context.Background()
+	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
+	orderNumber := "12345678903"
+
+	storage.CreateOrder(ctx, orderNumber, userID)
+
+	accrual := 100.5
+	err := storage.UpdateOrderStatus(ctx, orderNumber, "PROCESSED", &accrual)
+	require.NoError(t, err)
+
+	order, err := storage.GetOrderByNumber(ctx, orderNumber)
+	require.NoError(t, err)
+	require.NotNil(t, order)
+
+	assert.Equal(t, "PROCESSED", order.Status)
+	assert.NotNil(t, order.Accrual)
+	assert.Equal(t, accrual, *order.Accrual)
+}
+
+func TestGetPendingOrders(t *testing.T) {
+	storage := setupTestStorage(t)
+	defer storage.Close()
+
+	ctx := context.Background()
+	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
+
+	// Создаём заказы с разными статусами
+	storage.CreateOrder(ctx, "12345678903", userID)
+	storage.CreateOrder(ctx, "79927398713", userID)
+
+	// Один заказ делаем PROCESSED
+	accrual := 50.0
+	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
+
+	pendingOrders, err := storage.GetPendingOrders(ctx)
+	require.NoError(t, err)
+
+	// Должен быть хотя бы один заказ со статусом NEW
+	found := false
+	for _, order := range pendingOrders {
+		if order.Number == "79927398713" && order.Status == "NEW" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestGetBalance(t *testing.T) {
+	storage := setupTestStorage(t)
+	defer storage.Close()
+
+	ctx := context.Background()
+	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
+
+	// Создаём заказ и обновляем с начислением
+	storage.CreateOrder(ctx, "12345678903", userID)
+	accrual := 150.0
+	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
+
+	balance, err := storage.GetBalance(ctx, userID)
+	require.NoError(t, err)
+	require.NotNil(t, balance)
+
+	assert.Equal(t, accrual, balance.Current)
+	assert.Equal(t, 0.0, balance.Withdrawn)
+}
+
+func TestCreateWithdrawal(t *testing.T) {
+	storage := setupTestStorage(t)
+	defer storage.Close()
+
+	ctx := context.Background()
+	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
+
+	// Создаём баланс через обработанный заказ
+	storage.CreateOrder(ctx, "12345678903", userID)
+	accrual := 200.0
+	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
+
+	// Создаём вывод средств
+	err := storage.CreateWithdrawal(ctx, userID, "2377225624", 100.0)
+	require.NoError(t, err)
+
+	// Проверяем обновленный баланс
+	balance, err := storage.GetBalance(ctx, userID)
+	require.NoError(t, err)
+	assert.Equal(t, 100.0, balance.Current) // 200 - 100
+	assert.Equal(t, 100.0, balance.Withdrawn)
+}
+
+func TestCreateWithdrawal_InsufficientFunds(t *testing.T) {
+	storage := setupTestStorage(t)
+	defer storage.Close()
+
+	ctx := context.Background()
+	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
+
+	// Попытка вывода без достаточного баланса
+	err := storage.CreateWithdrawal(ctx, userID, "2377225624", 100.0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "insufficient funds")
+}
+
+func TestGetWithdrawals(t *testing.T) {
+	storage := setupTestStorage(t)
+	defer storage.Close()
+
+	ctx := context.Background()
+	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
+
+	// Создаём баланс
+	storage.CreateOrder(ctx, "12345678903", userID)
+	accrual := 200.0
+	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
+
+	// Создаём выводы
+	storage.CreateWithdrawal(ctx, userID, "2377225624", 50.0)
+	storage.CreateWithdrawal(ctx, userID, "4000000000000002", 30.0)
+
+	withdrawals, err := storage.GetWithdrawals(ctx, userID)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(withdrawals), 2)
+
+	// Проверяем что выводы отсортированы по времени (DESC)
+	if len(withdrawals) >= 2 {
+		assert.True(t, withdrawals[0].ProcessedAt.After(withdrawals[1].ProcessedAt) ||
+			withdrawals[0].ProcessedAt.Equal(withdrawals[1].ProcessedAt))
+	}
+}

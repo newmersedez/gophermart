@@ -92,11 +92,8 @@ func TestLogin_Success(t *testing.T) {
 	userID := uuid.New()
 	passwordHash, _ := auth.HashPassword("password123")
 
-	user := &models.User{
-		ID:           userID,
-		Login:        "testuser",
-		PasswordHash: passwordHash,
-	}
+	user := models.NewUser("testuser", passwordHash)
+	user.ID = userID
 
 	mockStorage.EXPECT().
 		GetUserByLogin(mock.Anything, "testuser").
@@ -135,11 +132,8 @@ func TestLogin_InvalidPassword(t *testing.T) {
 	userID := uuid.New()
 	passwordHash, _ := auth.HashPassword("correctpassword")
 
-	user := &models.User{
-		ID:           userID,
-		Login:        "testuser",
-		PasswordHash: passwordHash,
-	}
+	user := models.NewUser("testuser", passwordHash)
+	user.ID = userID
 
 	mockStorage.EXPECT().
 		GetUserByLogin(mock.Anything, "testuser").
@@ -326,4 +320,33 @@ func TestLogin_UserNotFound(t *testing.T) {
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+}
+
+func TestRegister_CreateUserStorageError(t *testing.T) {
+	logger := slog.Default()
+	mockStorage := mocks.NewMockStorageInterface(t)
+
+	// Test non-postgres error
+	mockStorage.EXPECT().
+		CreateUser(mock.Anything, "testuser", mock.AnythingOfType("string")).
+		Return(uuid.Nil, errors.New("general database error")).
+		Once()
+
+	handler := NewAuthHandler(mockStorage, logger)
+
+	reqBody := RegisterRequest{
+		Login:    "testuser",
+		Password: "password123",
+	}
+	body, _ := json.Marshal(reqBody)
+
+	request := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	handler.Register(w, request)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }

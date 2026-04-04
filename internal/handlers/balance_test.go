@@ -25,10 +25,7 @@ func TestGetBalance_Success(t *testing.T) {
 	mockStorage := mocks.NewMockStorageInterface(t)
 
 	userID := uuid.New()
-	balance := &models.Balance{
-		Current:   1000.50,
-		Withdrawn: 250.0,
-	}
+	balance := models.NewBalance(1000.50, 250.0)
 
 	mockStorage.EXPECT().
 		GetBalance(mock.Anything, userID).
@@ -148,13 +145,10 @@ func TestGetWithdrawals_Success(t *testing.T) {
 	userID := uuid.New()
 	now := time.Now()
 
-	withdrawals := []models.Withdrawal{
-		{
-			Order:       "79927398713",
-			Sum:         100.5,
-			ProcessedAt: now,
-		},
-	}
+	withdrawal1 := models.NewWithdrawal("79927398713", 100.5, userID)
+	withdrawal1.ProcessedAt = now
+
+	withdrawals := []models.Withdrawal{*withdrawal1}
 
 	mockStorage.EXPECT().
 		GetWithdrawals(mock.Anything, userID).
@@ -312,6 +306,31 @@ func TestGetWithdrawals_Error(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	handler.GetWithdrawals(w, request)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+}
+
+func TestGetBalance_DatabaseError(t *testing.T) {
+	logger := slog.Default()
+	mockStorage := mocks.NewMockStorageInterface(t)
+
+	userID := uuid.New()
+	mockStorage.EXPECT().
+		GetBalance(mock.Anything, userID).
+		Return(nil, errors.New("database error")).
+		Once()
+
+	handler := NewBalanceHandler(mockStorage, logger)
+
+	request := httptest.NewRequest(http.MethodGet, "/api/user/balance", nil)
+	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	request = request.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.GetBalance(w, request)
 
 	res := w.Result()
 	defer res.Body.Close()

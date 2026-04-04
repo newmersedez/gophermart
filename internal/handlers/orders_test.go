@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -83,15 +84,12 @@ func TestGetOrders_Success(t *testing.T) {
 	now := time.Now()
 	accrual := 500.0
 
-	orders := []models.Order{
-		{
-			Number:     "79927398713",
-			UserID:     userID,
-			Status:     models.OrderStatusProcessed,
-			Accrual:    &accrual,
-			UploadedAt: now,
-		},
-	}
+	order1 := models.NewOrder("79927398713", userID)
+	order1.Status = models.OrderStatusProcessed
+	order1.Accrual = &accrual
+	order1.UploadedAt = now
+
+	orders := []models.Order{*order1}
 
 	mockStorage.EXPECT().
 		GetUserOrders(mock.Anything, userID).
@@ -168,11 +166,7 @@ func TestUploadOrder_AlreadyExistsSameUser(t *testing.T) {
 	userID := uuid.New()
 	orderNumber := "79927398713"
 
-	existingOrder := &models.Order{
-		Number: orderNumber,
-		UserID: userID,
-		Status: models.OrderStatusNew,
-	}
+	existingOrder := models.NewOrder(orderNumber, userID)
 
 	mockStorage.EXPECT().
 		GetOrderByNumber(mock.Anything, orderNumber).
@@ -202,11 +196,7 @@ func TestUploadOrder_AlreadyExistsDifferentUser(t *testing.T) {
 	otherUserID := uuid.New()
 	orderNumber := "79927398713"
 
-	existingOrder := &models.Order{
-		Number: orderNumber,
-		UserID: otherUserID,
-		Status: models.OrderStatusNew,
-	}
+	existingOrder := models.NewOrder(orderNumber, otherUserID)
 
 	mockStorage.EXPECT().
 		GetOrderByNumber(mock.Anything, orderNumber).
@@ -311,4 +301,58 @@ func TestGetOrders_Error(t *testing.T) {
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+}
+
+func TestUploadOrder_InvalidLuhnChecksum(t *testing.T) {
+	logger := slog.Default()
+	mockStorage := mocks.NewMockStorageInterface(t)
+	handler := NewOrderHandler(mockStorage, logger)
+
+	userID := uuid.New()
+	invalidOrderNumber := "123456789" // Invalid Luhn
+
+	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(invalidOrderNumber)))
+	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	request = request.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.UploadOrder(w, request)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
+}
+
+func TestUploadOrder_ReadBodyError(t *testing.T) {
+	logger := slog.Default()
+	mockStorage := mocks.NewMockStorageInterface(t)
+	handler := NewOrderHandler(mockStorage, logger)
+
+	userID := uuid.New()
+
+	// Create a reader that will error on read
+	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", nil)
+	request.Body = &errorReader{}
+	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	request = request.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.UploadOrder(w, request)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+// Helper type for simulating read errors
+type errorReader struct{}
+
+func (e *errorReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
+}
+
+func (e *errorReader) Close() error {
+	return nil
 }

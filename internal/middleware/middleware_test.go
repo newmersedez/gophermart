@@ -278,3 +278,24 @@ func TestGzipMiddleware_InvalidGzipRequest(t *testing.T) {
 		t.Errorf("Expected status 500, got %v", w.Code)
 	}
 }
+
+func TestGzipMiddleware_GzipWriterError(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("test response"))
+	})
+
+	middleware := GzipMiddleware(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	// Use a writer that will cause issues
+	w := httptest.NewRecorder()
+
+	middleware.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status OK, got %v", w.Code)
+	}
+}

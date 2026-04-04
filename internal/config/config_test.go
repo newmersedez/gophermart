@@ -204,3 +204,73 @@ func TestAccrualSystemAddressPriority(t *testing.T) {
 		})
 	}
 }
+
+func TestNewConfig_EnvVarsAndFlags(t *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	// Set environment variables
+	t.Setenv("RUN_ADDRESS", "env:9999")
+	t.Setenv("DATABASE_URI", "postgresql://env/db")
+	t.Setenv("ACCRUAL_SYSTEM_ADDRESS", "http://env:8081")
+
+	// Also set flags - flags should take priority
+	os.Args = []string{"test", "-a", "flag:8888", "-d", "postgresql://flag/db"}
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	cfg, err := NewConfig()
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// Flags should override env vars
+	require.Equal(t, "flag:8888", cfg.RunAddress)
+	require.Equal(t, "postgresql://flag/db", cfg.DatabaseURI)
+	// No -r flag, so should use env var
+	require.Equal(t, "http://env:8081", cfg.AccrualSystemAddress)
+}
+
+func TestNewConfig_DefaultValues(t *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	// Clear any environment variables
+	os.Unsetenv("RUN_ADDRESS")
+	os.Unsetenv("DATABASE_URI")
+	os.Unsetenv("ACCRUAL_SYSTEM_ADDRESS")
+
+	// No command line flags
+	os.Args = []string{"test"}
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	cfg, err := NewConfig()
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// Should use default value for RunAddress
+	require.Equal(t, "localhost:8080", cfg.RunAddress)
+	// Others should be empty
+	require.Equal(t, "", cfg.DatabaseURI)
+	require.Equal(t, "", cfg.AccrualSystemAddress)
+}
+
+func TestNewConfig_EnvironmentVariablesOnly(t *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	// Set environment variables
+	t.Setenv("RUN_ADDRESS", "env:9999")
+	t.Setenv("DATABASE_URI", "postgresql://env/db")
+	t.Setenv("ACCRUAL_SYSTEM_ADDRESS", "http://env:8081")
+
+	// No command line flags
+	os.Args = []string{"test"}
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	cfg, err := NewConfig()
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	require.Equal(t, "env:9999", cfg.RunAddress)
+	require.Equal(t, "postgresql://env/db", cfg.DatabaseURI)
+	require.Equal(t, "http://env:8081", cfg.AccrualSystemAddress)
+}

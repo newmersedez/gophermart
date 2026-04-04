@@ -33,6 +33,40 @@ type Balance struct {
 	Withdrawn float64 `json:"withdrawn"`
 }
 
+func NewUser(login, passwordHash string) *User {
+	return &User{
+		ID:           uuid.New(),
+		Login:        login,
+		PasswordHash: passwordHash,
+		CreatedAt:    time.Now(),
+	}
+}
+
+func NewOrder(number string, userID uuid.UUID) *Order {
+	return &Order{
+		Number:     number,
+		UserID:     userID,
+		Status:     OrderStatusNew,
+		UploadedAt: time.Now(),
+	}
+}
+
+func NewWithdrawal(orderNumber string, sum float64, userID uuid.UUID) *Withdrawal {
+	return &Withdrawal{
+		Order:       orderNumber,
+		Sum:         sum,
+		UserID:      userID,
+		ProcessedAt: time.Now(),
+	}
+}
+
+func NewBalance(current, withdrawn float64) *Balance {
+	return &Balance{
+		Current:   current,
+		Withdrawn: withdrawn,
+	}
+}
+
 const (
 	OrderStatusNew        = "NEW"
 	OrderStatusProcessing = "PROCESSING"

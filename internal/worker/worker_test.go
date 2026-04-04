@@ -35,11 +35,7 @@ func TestProcessOrder_Success(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	accrualValue := 500.0
 	accrualResp := &accrual.AccrualResponse{
@@ -73,11 +69,7 @@ func TestProcessOrder_NilResponse(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	mockAccrual.EXPECT().
 		GetOrderAccrual(mock.Anything, order.Number).
@@ -94,11 +86,7 @@ func TestProcessOrder_AccrualError(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	mockAccrual.EXPECT().
 		GetOrderAccrual(mock.Anything, order.Number).
@@ -115,11 +103,7 @@ func TestProcessOrders_Success(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	mockStorage.EXPECT().
 		GetPendingOrders(mock.Anything).
@@ -173,11 +157,7 @@ func TestProcessOrder_TooManyRequests(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	mockAccrual.EXPECT().
 		GetOrderAccrual(mock.Anything, order.Number).
@@ -195,11 +175,7 @@ func TestProcessOrder_UpdateStatusError(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	accrualValue := 500.0
 	accrualResp := &accrual.AccrualResponse{
@@ -233,11 +209,7 @@ func TestProcessOrders_ContextCancelled(t *testing.T) {
 
 	worker := NewWorker(mockStorage, mockAccrual, logger)
 
-	order := models.Order{
-		Number: "79927398713",
-		UserID: uuid.New(),
-		Status: models.OrderStatusNew,
-	}
+	order := *models.NewOrder("79927398713", uuid.New())
 
 	mockStorage.EXPECT().
 		GetPendingOrders(mock.Anything).
