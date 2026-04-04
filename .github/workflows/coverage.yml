@@ -2,7 +2,6 @@ name: test coverage
 
 on:
   push:
-  pull_request:
 
 jobs:
   coverage:
@@ -71,37 +70,6 @@ jobs:
             coverage.out
             coverage.html
             .github/badges/coverage.json
-          
-      - name: Comment PR with coverage
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const coverage = '${{ steps.coverage.outputs.percentage }}';
-            
-            const coverageEmoji = coverage > 80 ? '✅' : coverage > 60 ? '⚠️' : '❌';
-            const coverageColor = coverage > 80 ? '🟢' : coverage > 60 ? '🟡' : '🔴';
-            
-            const comment = `## ${coverageEmoji} Test Coverage Report
-            
-            **Current Coverage: ${coverageColor} ${coverage}%**
-            
-            | Metric | Value |
-            |--------|--------|
-            | Coverage | ${coverage}% |
-            | Status | ${coverage > 60 ? 'PASS' : 'NEEDS IMPROVEMENT'} |
-            | Target | 60% |
-            
-            ${coverage < 60 ? '⚠️ **Coverage below target (60%)**' : '✅ **Coverage meets target**'}
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
             
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
