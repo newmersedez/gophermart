@@ -2,14 +2,11 @@ name: test coverage
 
 on:
   push:
-    branches:
-      - main
-      - master
   pull_request:
 
 jobs:
-  test:
-    name: Run tests with coverage
+  coverage:
+    name: Test Coverage
     runs-on: ubuntu-latest
     
     services:
@@ -36,25 +33,112 @@ jobs:
         with:
           go-version: '1.23'
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           TEST_DATABASE_URI: postgres://postgres:test@localhost:5432/gophermart_test?sslmode=disable
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v '/mocks')
           
-      - name: Calculate coverage
+      - name: Calculate coverage percentage
         id: coverage
         run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
-          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
-          echo "Coverage: $COVERAGE"
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Coverage: $COVERAGE%"
           
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: Generate coverage badge data
+        run: |
+          COVERAGE=${{ steps.coverage.outputs.percentage }}
+          COLOR="red"
+          if (( $(echo "$COVERAGE > 80" | bc -l) )); then
+            COLOR="brightgreen"
+          elif (( $(echo "$COVERAGE > 60" | bc -l) )); then
+            COLOR="yellow"
+          fi
+          
+          mkdir -p .github/badges
+          echo "{\"schemaVersion\": 1, \"label\": \"coverage\", \"message\": \"${COVERAGE}%\", \"color\": \"$COLOR\"}" > .github/badges/coverage.json
+          
+      - name: Generate HTML coverage report
+        run: |
+          go tool cover -html=coverage.out -o coverage.html
+          
+      - name: Generate coverage summary
+        run: |
+          COVERAGE=${{ steps.coverage.outputs.percentage }}
+          echo "# 📊 Test Coverage Report" > COVERAGE.md
+          echo "" >> COVERAGE.md
+          echo "**Current Coverage: ${COVERAGE}%**" >> COVERAGE.md
+          echo "" >> COVERAGE.md
+          
+          if (( $(echo "$COVERAGE > 80" | bc -l) )); then
+            echo "✅ **Excellent coverage!** (>80%)" >> COVERAGE.md
+          elif (( $(echo "$COVERAGE > 60" | bc -l) )); then
+            echo "⚠️ **Good coverage** (>60%)" >> COVERAGE.md  
+          else
+            echo "❌ **Coverage needs improvement** (<60%)" >> COVERAGE.md
+          fi
+          
+          echo "" >> COVERAGE.md
+          echo "| Metric | Value |" >> COVERAGE.md
+          echo "|--------|--------|" >> COVERAGE.md
+          echo "| Coverage | ${COVERAGE}% |" >> COVERAGE.md
+          echo "| Target | 60% |" >> COVERAGE.md
+          echo "| Status | $(if (( $(echo "$COVERAGE > 60" | bc -l) )); then echo "✅ PASS"; else echo "❌ FAIL"; fi) |" >> COVERAGE.md
+          echo "" >> COVERAGE.md
+          echo "_Last updated: $(date)_" >> COVERAGE.md
+          
+      - name: Commit coverage files
+        if: github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .github/badges/coverage.json COVERAGE.md || true
+          
+          # Check if there are changes to commit
+          if ! git diff --staged --quiet; then
+            git commit -m "🤖 Auto-update coverage: ${{ steps.coverage.outputs.percentage }}% [skip ci]"
+            git push
+            echo "✅ Coverage updated to ${{ steps.coverage.outputs.percentage }}%"
+          else
+            echo "ℹ️ No coverage changes to commit"
+          fi
+          
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
-          file: ./coverage.out
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const coverage = '${{ steps.coverage.outputs.percentage }}';
+            
+            const coverageEmoji = coverage > 80 ? '✅' : coverage > 60 ? '⚠️' : '❌';
+            const coverageColor = coverage > 80 ? '🟢' : coverage > 60 ? '🟡' : '🔴';
+            
+            const comment = `## ${coverageEmoji} Test Coverage Report
+            
+            **Current Coverage: ${coverageColor} ${coverage}%**
+            
+            | Metric | Value |
+            |--------|--------|
+            | Coverage | ${coverage}% |
+            | Status | ${coverage > 60 ? 'PASS' : 'NEEDS IMPROVEMENT'} |
+            | Target | 60% |
+            
+            ${coverage < 60 ? '⚠️ **Coverage below target (60%)**' : '✅ **Coverage meets target**'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
