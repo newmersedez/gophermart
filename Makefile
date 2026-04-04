@@ -1,4 +1,4 @@
-.PHONY: test coverage coverage-html coverage-check lint build run clean deps mocks
+.PHONY: test coverage coverage-html coverage-check coverage-badge lint build run clean deps mocks
 
 # Установка зависимостей
 deps:
@@ -41,6 +41,21 @@ coverage-check: coverage
 		echo "❌ Coverage below target (60%)"; \
 		exit 1; \
 	fi
+
+# Обновить badge покрытия локально
+coverage-badge: coverage
+	@echo "Updating coverage badge..."
+	@COVERAGE=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+	COLOR="red"; \
+	if [ $$(echo "$$COVERAGE > 80" | bc -l) -eq 1 ]; then \
+		COLOR="brightgreen"; \
+	elif [ $$(echo "$$COVERAGE > 60" | bc -l) -eq 1 ]; then \
+		COLOR="yellow"; \
+	fi; \
+	mkdir -p .github/badges; \
+	echo "{\"schemaVersion\": 1, \"label\": \"coverage\", \"message\": \"$${COVERAGE}%\", \"color\": \"$$COLOR\"}" > .github/badges/coverage.json; \
+	echo "✅ Coverage badge updated: $$COVERAGE% ($$COLOR)"; \
+	echo "Now run: git add .github/badges/coverage.json && git commit -m \"Update coverage: $$COVERAGE%\" && git push"
 
 # Запуск линтера
 lint:

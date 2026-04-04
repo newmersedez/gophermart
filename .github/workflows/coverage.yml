@@ -63,46 +63,14 @@ jobs:
         run: |
           go tool cover -html=coverage.out -o coverage.html
           
-      - name: Generate coverage summary
-        run: |
-          COVERAGE=${{ steps.coverage.outputs.percentage }}
-          echo "# 📊 Test Coverage Report" > COVERAGE.md
-          echo "" >> COVERAGE.md
-          echo "**Current Coverage: ${COVERAGE}%**" >> COVERAGE.md
-          echo "" >> COVERAGE.md
-          
-          if (( $(echo "$COVERAGE > 80" | bc -l) )); then
-            echo "✅ **Excellent coverage!** (>80%)" >> COVERAGE.md
-          elif (( $(echo "$COVERAGE > 60" | bc -l) )); then
-            echo "⚠️ **Good coverage** (>60%)" >> COVERAGE.md  
-          else
-            echo "❌ **Coverage needs improvement** (<60%)" >> COVERAGE.md
-          fi
-          
-          echo "" >> COVERAGE.md
-          echo "| Metric | Value |" >> COVERAGE.md
-          echo "|--------|--------|" >> COVERAGE.md
-          echo "| Coverage | ${COVERAGE}% |" >> COVERAGE.md
-          echo "| Target | 60% |" >> COVERAGE.md
-          echo "| Status | $(if (( $(echo "$COVERAGE > 60" | bc -l) )); then echo "✅ PASS"; else echo "❌ FAIL"; fi) |" >> COVERAGE.md
-          echo "" >> COVERAGE.md
-          echo "_Last updated: $(date)_" >> COVERAGE.md
-          
-      - name: Commit coverage files
-        if: github.event_name == 'push'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .github/badges/coverage.json COVERAGE.md || true
-          
-          # Check if there are changes to commit
-          if ! git diff --staged --quiet; then
-            git commit -m "🤖 Auto-update coverage: ${{ steps.coverage.outputs.percentage }}% [skip ci]"
-            git push
-            echo "✅ Coverage updated to ${{ steps.coverage.outputs.percentage }}%"
-          else
-            echo "ℹ️ No coverage changes to commit"
-          fi
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage.out
+            coverage.html
+            .github/badges/coverage.json
           
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request'
