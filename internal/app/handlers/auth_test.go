@@ -326,7 +326,6 @@ func TestRegister_CreateUserStorageError(t *testing.T) {
 	logger := slog.Default()
 	mockStorage := mocks.NewMockStorageInterface(t)
 
-	
 	mockStorage.EXPECT().
 		CreateUser(mock.Anything, "testuser", mock.AnythingOfType("string")).
 		Return(uuid.Nil, errors.New("general database error")).
