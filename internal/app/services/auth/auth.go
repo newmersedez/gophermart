@@ -30,7 +30,7 @@ type Claims struct {
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
 	return string(hash), nil
 }
@@ -63,7 +63,7 @@ func ValidateToken(tokenString string) (uuid.UUID, error) {
 	})
 
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
 	if !token.Valid {
@@ -76,7 +76,7 @@ func ValidateToken(tokenString string) (uuid.UUID, error) {
 func GenerateRandomString(length int) (string, error) {
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
 	return hex.EncodeToString(bytes), nil
 }

@@ -13,7 +13,6 @@ import (
 	"gophermart/internal/domain/models"
 )
 
-
 type AccrualClient interface {
 	GetOrderAccrual(ctx context.Context, orderNumber string) (*AccrualResponse, error)
 	MapStatus(accrualStatus string) string
@@ -46,12 +45,12 @@ func (c *Client) GetOrderAccrual(ctx context.Context, orderNumber string) (*Accr
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create HTTP request for order %s: %w", orderNumber, err)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute HTTP request for order %s: %w", orderNumber, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -59,7 +58,7 @@ func (c *Client) GetOrderAccrual(ctx context.Context, orderNumber string) (*Accr
 	case http.StatusOK:
 		var accrualResp AccrualResponse
 		if err := json.NewDecoder(resp.Body).Decode(&accrualResp); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode accrual response for order %s: %w", orderNumber, err)
 		}
 		return &accrualResp, nil
 	case http.StatusNoContent:
