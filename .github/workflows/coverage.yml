@@ -2,9 +2,6 @@ name: test coverage
 
 on:
   push:
-    branches:
-      - main
-      - master
   pull_request:
 
 jobs:
@@ -97,8 +94,15 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .github/badges/coverage.json COVERAGE.md || true
-          git diff --staged --quiet || git commit -m "Update coverage: ${{ steps.coverage.outputs.percentage }}% [skip ci]" || true
-          git push || true
+          
+          # Check if there are changes to commit
+          if ! git diff --staged --quiet; then
+            git commit -m "🤖 Auto-update coverage: ${{ steps.coverage.outputs.percentage }}% [skip ci]"
+            git push
+            echo "✅ Coverage updated to ${{ steps.coverage.outputs.percentage }}%"
+          else
+            echo "ℹ️ No coverage changes to commit"
+          fi
           
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request'
