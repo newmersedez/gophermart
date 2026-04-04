@@ -138,7 +138,7 @@ func TestGetOrderAccrual_UnexpectedStatusCode(t *testing.T) {
 
 func TestMapStatus(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	client := NewClient("http:
+	client := NewClient("http://localhost:8081", logger)
 
 	tests := []struct {
 		name           string

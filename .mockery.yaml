@@ -1,6 +1,6 @@
 template: testify
 packages:
-    gophermart/internal/storage:
+    gophermart/internal/infrastructure/storage:
         config:
             dir: "{{.InterfaceDir}}/mocks"
             filename: "mock_{{.InterfaceName | snakecase}}.go"
@@ -8,7 +8,7 @@ packages:
             structname: "Mock{{.InterfaceName}}"
         interfaces:
             StorageInterface:
-    gophermart/internal/accrual:
+    gophermart/internal/infrastructure/accrual:
         config:
             dir: "{{.InterfaceDir}}/mocks"
             filename: "mock_{{.InterfaceName | snakecase}}.go"

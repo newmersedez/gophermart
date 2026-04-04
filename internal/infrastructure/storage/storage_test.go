@@ -29,7 +29,6 @@ func setupTestStorage(t *testing.T) *Storage {
 		t.Skip("Database not available, skipping storage tests:", err)
 	}
 
-	
 	_, _ = storage.pool.Exec(ctx, "TRUNCATE users, orders, withdrawals CASCADE")
 
 	return storage
@@ -150,15 +149,13 @@ func TestNewStorage_CannotConnect(t *testing.T) {
 	logger := slog.Default()
 	ctx := context.Background()
 
-	
-	_, err := NewStorage(ctx, "postgres:
+	_, err := NewStorage(ctx, "postgres://invalid", logger)
 	assert.Error(t, err)
 }
 
 func TestClose(t *testing.T) {
 	storage := setupTestStorage(t)
 
-	
 	assert.NotPanics(t, func() {
 		storage.Close()
 	})
@@ -194,18 +191,15 @@ func TestGetPendingOrders(t *testing.T) {
 	ctx := context.Background()
 	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
 
-	
 	storage.CreateOrder(ctx, "12345678903", userID)
 	storage.CreateOrder(ctx, "79927398713", userID)
 
-	
 	accrual := 50.0
 	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
 
 	pendingOrders, err := storage.GetPendingOrders(ctx)
 	require.NoError(t, err)
 
-	
 	found := false
 	for _, order := range pendingOrders {
 		if order.Number == "79927398713" && order.Status == "NEW" {
@@ -223,7 +217,6 @@ func TestGetBalance(t *testing.T) {
 	ctx := context.Background()
 	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
 
-	
 	storage.CreateOrder(ctx, "12345678903", userID)
 	accrual := 150.0
 	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
@@ -243,19 +236,16 @@ func TestCreateWithdrawal(t *testing.T) {
 	ctx := context.Background()
 	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
 
-	
 	storage.CreateOrder(ctx, "12345678903", userID)
 	accrual := 200.0
 	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
 
-	
 	err := storage.CreateWithdrawal(ctx, userID, "2377225624", 100.0)
 	require.NoError(t, err)
 
-	
 	balance, err := storage.GetBalance(ctx, userID)
 	require.NoError(t, err)
-	assert.Equal(t, 100.0, balance.Current) 
+	assert.Equal(t, 100.0, balance.Current)
 	assert.Equal(t, 100.0, balance.Withdrawn)
 }
 
@@ -266,7 +256,6 @@ func TestCreateWithdrawal_InsufficientFunds(t *testing.T) {
 	ctx := context.Background()
 	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
 
-	
 	err := storage.CreateWithdrawal(ctx, userID, "2377225624", 100.0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "insufficient funds")
@@ -279,12 +268,10 @@ func TestGetWithdrawals(t *testing.T) {
 	ctx := context.Background()
 	userID, _ := storage.CreateUser(ctx, "testuser", "pass")
 
-	
 	storage.CreateOrder(ctx, "12345678903", userID)
 	accrual := 200.0
 	storage.UpdateOrderStatus(ctx, "12345678903", "PROCESSED", &accrual)
 
-	
 	storage.CreateWithdrawal(ctx, userID, "2377225624", 50.0)
 	storage.CreateWithdrawal(ctx, userID, "4000000000000002", 30.0)
 
@@ -292,7 +279,6 @@ func TestGetWithdrawals(t *testing.T) {
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(withdrawals), 2)
 
-	
 	if len(withdrawals) >= 2 {
 		assert.True(t, withdrawals[0].ProcessedAt.After(withdrawals[1].ProcessedAt) ||
 			withdrawals[0].ProcessedAt.Equal(withdrawals[1].ProcessedAt))

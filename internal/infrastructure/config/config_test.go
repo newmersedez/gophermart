@@ -100,18 +100,18 @@ func TestDatabaseURIPriority(t *testing.T) {
 		{
 			name: "Flag has priority over environment",
 			envVars: map[string]string{
-				"DATABASE_URI": "postgresql:
+				"DATABASE_URI": "postgresql://env/db",
 			},
-			flagArgs:       []string{"-d", "postgresql:
-			expectedResult: "postgresql:
+			flagArgs:       []string{"-d", "postgresql://flag/db"},
+			expectedResult: "postgresql://flag/db",
 		},
 		{
 			name: "Environment value if flag not set",
 			envVars: map[string]string{
-				"DATABASE_URI": "postgresql:
+				"DATABASE_URI": "postgresql://env/db",
 			},
 			flagArgs:       []string{},
-			expectedResult: "postgresql:
+			expectedResult: "postgresql://env/db",
 		},
 		{
 			name:           "Empty if both not set",
@@ -159,18 +159,18 @@ func TestAccrualSystemAddressPriority(t *testing.T) {
 		{
 			name: "Flag has priority over environment",
 			envVars: map[string]string{
-				"ACCRUAL_SYSTEM_ADDRESS": "http:
+				"ACCRUAL_SYSTEM_ADDRESS": "http://localhost:8081",
 			},
-			flagArgs:       []string{"-r", "http:
-			expectedResult: "http:
+			flagArgs:       []string{"-r", "http://localhost:8081"},
+			expectedResult: "http://localhost:8081",
 		},
 		{
 			name: "Environment value if flag not set",
 			envVars: map[string]string{
-				"ACCRUAL_SYSTEM_ADDRESS": "http:
+				"ACCRUAL_SYSTEM_ADDRESS": "http://localhost:8081",
 			},
 			flagArgs:       []string{},
-			expectedResult: "http:
+			expectedResult: "http://localhost:8081",
 		},
 		{
 			name:           "Empty if both not set",
@@ -209,36 +209,31 @@ func TestNewConfig_EnvVarsAndFlags(t *testing.T) {
 	originalArgs := os.Args
 	defer func() { os.Args = originalArgs }()
 
-	
 	t.Setenv("RUN_ADDRESS", "env:9999")
-	t.Setenv("DATABASE_URI", "postgresql:
-	t.Setenv("ACCRUAL_SYSTEM_ADDRESS", "http:
+	t.Setenv("DATABASE_URI", "postgresql://env/db")
+	t.Setenv("ACCRUAL_SYSTEM_ADDRESS", "http://localhost:8081")
 
-	
-	os.Args = []string{"test", "-a", "flag:8888", "-d", "postgresql:
+	os.Args = []string{"test", "-a", "flag:8888", "-d", "postgresql://flag/db"}
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	cfg, err := NewConfig()
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	
 	require.Equal(t, "flag:8888", cfg.RunAddress)
-	require.Equal(t, "postgresql:
-	
-	require.Equal(t, "http:
+	require.Equal(t, "postgresql://flag/db", cfg.DatabaseURI)
+
+	require.Equal(t, "http://localhost:8081", cfg.AccrualSystemAddress)
 }
 
 func TestNewConfig_DefaultValues(t *testing.T) {
 	originalArgs := os.Args
 	defer func() { os.Args = originalArgs }()
 
-	
 	os.Unsetenv("RUN_ADDRESS")
 	os.Unsetenv("DATABASE_URI")
 	os.Unsetenv("ACCRUAL_SYSTEM_ADDRESS")
 
-	
 	os.Args = []string{"test"}
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
@@ -246,9 +241,8 @@ func TestNewConfig_DefaultValues(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	
 	require.Equal(t, "localhost:8080", cfg.RunAddress)
-	
+
 	require.Equal(t, "", cfg.DatabaseURI)
 	require.Equal(t, "", cfg.AccrualSystemAddress)
 }
@@ -257,12 +251,10 @@ func TestNewConfig_EnvironmentVariablesOnly(t *testing.T) {
 	originalArgs := os.Args
 	defer func() { os.Args = originalArgs }()
 
-	
 	t.Setenv("RUN_ADDRESS", "env:9999")
-	t.Setenv("DATABASE_URI", "postgresql:
-	t.Setenv("ACCRUAL_SYSTEM_ADDRESS", "http:
+	t.Setenv("DATABASE_URI", "postgresql://env/db")
+	t.Setenv("ACCRUAL_SYSTEM_ADDRESS", "http://localhost:8081")
 
-	
 	os.Args = []string{"test"}
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
@@ -271,6 +263,6 @@ func TestNewConfig_EnvironmentVariablesOnly(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	require.Equal(t, "env:9999", cfg.RunAddress)
-	require.Equal(t, "postgresql:
-	require.Equal(t, "http:
+	require.Equal(t, "postgresql://env/db", cfg.DatabaseURI)
+	require.Equal(t, "http://localhost:8081", cfg.AccrualSystemAddress)
 }
