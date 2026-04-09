@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -62,7 +63,7 @@ func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	err := h.storage.CreateWithdrawal(r.Context(), userID, req.Order, req.Sum)
 	if err != nil {
-		if err.Error() == "insufficient funds" {
+		if errors.Is(err, storage.ErrInsufficientFunds) {
 			http.Error(w, "Insufficient funds", http.StatusPaymentRequired)
 			return
 		}
@@ -95,7 +96,7 @@ func (h *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var response []WithdrawalResponse
+	response := make([]WithdrawalResponse, 0, len(withdrawals))
 	for _, w := range withdrawals {
 		response = append(response, WithdrawalResponse{
 			Order:       w.Order,

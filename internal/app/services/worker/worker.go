@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -61,7 +62,7 @@ func (w *Worker) processOrders(ctx context.Context) {
 func (w *Worker) processOrder(ctx context.Context, order models.Order) {
 	resp, err := w.accrualClient.GetOrderAccrual(ctx, order.Number)
 	if err != nil {
-		if err.Error() == "too many requests" {
+		if errors.Is(err, accrual.ErrTooManyRequests) {
 			time.Sleep(5 * time.Second)
 		}
 		w.logger.Debug("failed to get accrual for order", "order", order.Number, "error", err)

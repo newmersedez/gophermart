@@ -16,6 +16,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var ErrInsufficientFunds = errors.New("insufficient funds")
+
 type StorageInterface interface {
 	Close() error
 	CreateUser(ctx context.Context, login, passwordHash string) (uuid.UUID, error)
@@ -218,7 +220,7 @@ func (s *Storage) CreateWithdrawal(ctx context.Context, userID uuid.UUID, order 
 	}
 
 	if balance.Current < sum {
-		return errors.New("insufficient funds")
+		return ErrInsufficientFunds
 	}
 
 	query := `INSERT INTO withdrawals(order_number, sum, user_id, processed_at) VALUES($1, $2, $3, NOW())`

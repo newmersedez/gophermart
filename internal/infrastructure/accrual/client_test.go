@@ -84,8 +84,8 @@ func TestGetOrderAccrual_TooManyRequests(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "too many requests")
-	assert.Contains(t, err.Error(), "60 seconds")
+	assert.ErrorContains(t, err, "too many requests")
+	assert.ErrorContains(t, err, "60 seconds")
 }
 
 func TestGetOrderAccrual_TooManyRequestsNoRetryAfter(t *testing.T) {
@@ -101,7 +101,7 @@ func TestGetOrderAccrual_TooManyRequestsNoRetryAfter(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Equal(t, "too many requests", err.Error())
+	assert.EqualError(t, err, "too many requests")
 }
 
 func TestGetOrderAccrual_InternalServerError(t *testing.T) {
@@ -117,7 +117,7 @@ func TestGetOrderAccrual_InternalServerError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Equal(t, "accrual system internal error", err.Error())
+	assert.EqualError(t, err, "accrual system internal error")
 }
 
 func TestGetOrderAccrual_UnexpectedStatusCode(t *testing.T) {
@@ -133,7 +133,7 @@ func TestGetOrderAccrual_UnexpectedStatusCode(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "unexpected status code: 400")
+	assert.ErrorContains(t, err, "unexpected status code: 400")
 }
 
 func TestMapStatus(t *testing.T) {
@@ -207,6 +207,6 @@ func TestGetOrderAccrual_TooManyRequestsInvalidRetryAfter(t *testing.T) {
 
 	resp, err := client.GetOrderAccrual(context.Background(), "12345678903")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "retry after 0 seconds")
+	assert.ErrorContains(t, err, "retry after 0 seconds")
 	assert.Nil(t, resp)
 }

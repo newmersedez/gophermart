@@ -13,6 +13,8 @@ import (
 	"gophermart/internal/domain/models"
 )
 
+var ErrTooManyRequests = errors.New("too many requests")
+
 type AccrualClient interface {
 	GetOrderAccrual(ctx context.Context, orderNumber string) (*AccrualResponse, error)
 	MapStatus(accrualStatus string) string
@@ -67,9 +69,9 @@ func (c *Client) GetOrderAccrual(ctx context.Context, orderNumber string) (*Accr
 		retryAfter := resp.Header.Get("Retry-After")
 		if retryAfter != "" {
 			seconds, _ := strconv.Atoi(retryAfter)
-			return nil, fmt.Errorf("too many requests, retry after %d seconds", seconds)
+			return nil, fmt.Errorf("%w, retry after %d seconds", ErrTooManyRequests, seconds)
 		}
-		return nil, errors.New("too many requests")
+		return nil, ErrTooManyRequests
 	case http.StatusInternalServerError:
 		return nil, errors.New("accrual system internal error")
 	default:

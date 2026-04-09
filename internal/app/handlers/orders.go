@@ -100,7 +100,7 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response []OrderResponse
+	response := make([]OrderResponse, 0, len(orders))
 	for _, order := range orders {
 		response = append(response, OrderResponse{
 			Number:     order.Number,

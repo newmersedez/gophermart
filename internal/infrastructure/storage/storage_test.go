@@ -181,7 +181,7 @@ func TestUpdateOrderStatus(t *testing.T) {
 
 	assert.Equal(t, "PROCESSED", order.Status)
 	assert.NotNil(t, order.Accrual)
-	assert.Equal(t, accrual, *order.Accrual)
+	assert.InEpsilon(t, accrual, *order.Accrual, 1e-9)
 }
 
 func TestGetPendingOrders(t *testing.T) {
@@ -225,8 +225,8 @@ func TestGetBalance(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, balance)
 
-	assert.Equal(t, accrual, balance.Current)
-	assert.Equal(t, 0.0, balance.Withdrawn)
+	assert.InEpsilon(t, accrual, balance.Current, 1e-9)
+	assert.InDelta(t, 0.0, balance.Withdrawn, 1e-9)
 }
 
 func TestCreateWithdrawal(t *testing.T) {
@@ -245,8 +245,8 @@ func TestCreateWithdrawal(t *testing.T) {
 
 	balance, err := storage.GetBalance(ctx, userID)
 	require.NoError(t, err)
-	assert.Equal(t, 100.0, balance.Current)
-	assert.Equal(t, 100.0, balance.Withdrawn)
+	assert.InEpsilon(t, 100.0, balance.Current, 1e-9)
+	assert.InEpsilon(t, 100.0, balance.Withdrawn, 1e-9)
 }
 
 func TestCreateWithdrawal_InsufficientFunds(t *testing.T) {
@@ -258,7 +258,7 @@ func TestCreateWithdrawal_InsufficientFunds(t *testing.T) {
 
 	err := storage.CreateWithdrawal(ctx, userID, "2377225624", 100.0)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "insufficient funds")
+	assert.ErrorContains(t, err, "insufficient funds")
 }
 
 func TestGetWithdrawals(t *testing.T) {
