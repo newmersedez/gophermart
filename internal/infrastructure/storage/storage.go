@@ -20,19 +20,6 @@ var ErrInsufficientFunds = errors.New("insufficient funds")
 var ErrUserNotFound = errors.New("user not found")
 var ErrOrderNotFound = errors.New("order not found")
 
-type StorageInterface interface {
-	Close() error
-	CreateUser(ctx context.Context, login, passwordHash string) (uuid.UUID, error)
-	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
-	CreateOrder(ctx context.Context, number string, userID uuid.UUID) error
-	GetOrderByNumber(ctx context.Context, number string) (*models.Order, error)
-	GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error)
-	UpdateOrderStatus(ctx context.Context, number, status string, accrual *float64) error
-	GetPendingOrders(ctx context.Context) ([]models.Order, error)
-	GetBalance(ctx context.Context, userID uuid.UUID) (*models.Balance, error)
-	CreateWithdrawal(ctx context.Context, userID uuid.UUID, order string, sum float64) error
-	GetWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error)
-}
 
 type Storage struct {
 	pool   *pgxpool.Pool
