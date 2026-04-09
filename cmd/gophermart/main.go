@@ -52,7 +52,11 @@ func run() error {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
 
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			logger.Error("failed to close storage", "error", err)
+		}
+	}()
 
 	router := handlers.NewRouter(store, logger)
 

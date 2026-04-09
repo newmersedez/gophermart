@@ -40,9 +40,20 @@ func (_m *MockStorageInterface) EXPECT() *MockStorageInterface_Expecter {
 }
 
 // Close provides a mock function for the type MockStorageInterface
-func (_mock *MockStorageInterface) Close() {
-	_mock.Called()
-	return
+func (_mock *MockStorageInterface) Close() error {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func() error); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
 }
 
 // MockStorageInterface_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
@@ -62,13 +73,13 @@ func (_c *MockStorageInterface_Close_Call) Run(run func()) *MockStorageInterface
 	return _c
 }
 
-func (_c *MockStorageInterface_Close_Call) Return() *MockStorageInterface_Close_Call {
-	_c.Call.Return()
+func (_c *MockStorageInterface_Close_Call) Return(err error) *MockStorageInterface_Close_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockStorageInterface_Close_Call) RunAndReturn(run func()) *MockStorageInterface_Close_Call {
-	_c.Run(run)
+func (_c *MockStorageInterface_Close_Call) RunAndReturn(run func() error) *MockStorageInterface_Close_Call {
+	_c.Call.Return(run)
 	return _c
 }
 

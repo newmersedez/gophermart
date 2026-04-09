@@ -17,7 +17,7 @@ import (
 )
 
 type StorageInterface interface {
-	Close()
+	Close() error
 	CreateUser(ctx context.Context, login, passwordHash string) (uuid.UUID, error)
 	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
 	CreateOrder(ctx context.Context, number string, userID uuid.UUID) error
@@ -68,8 +68,9 @@ func runMigrations(dsn string) error {
 	return nil
 }
 
-func (s *Storage) Close() {
+func (s *Storage) Close() error {
 	s.pool.Close()
+	return nil
 }
 
 func (s *Storage) CreateUser(ctx context.Context, login, passwordHash string) (uuid.UUID, error) {
