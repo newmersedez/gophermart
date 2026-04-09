@@ -4,6 +4,8 @@ import (
 	"flag"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRunWithoutDatabaseURI(t *testing.T) {
@@ -21,14 +23,8 @@ func TestRunWithoutDatabaseURI(t *testing.T) {
 	os.Unsetenv("DATABASE_URI")
 
 	err := run()
-	if err == nil {
-		t.Error("Expected error when DATABASE_URI is not set, got nil")
-	}
-
-	expectedMsg := "database URI is required"
-	if err.Error() != expectedMsg {
-		t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
-	}
+	require.Error(t, err)
+	require.EqualError(t, err, "database URI is required")
 }
 
 func TestRunWithInvalidDatabaseURI(t *testing.T) {
@@ -46,12 +42,6 @@ func TestRunWithInvalidDatabaseURI(t *testing.T) {
 	os.Setenv("DATABASE_URI", "invalid://uri")
 
 	err := run()
-	if err == nil {
-		t.Error("Expected error with invalid DATABASE_URI, got nil")
-	}
-
-	expectedSubstring := "failed to initialize storage"
-	if err.Error() == "" || len(err.Error()) < len(expectedSubstring) {
-		t.Errorf("Expected error message to contain %q, got %q", expectedSubstring, err.Error())
-	}
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to initialize storage")
 }

@@ -12,6 +12,7 @@ import (
 	"gophermart/internal/app/services/auth"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequestLoggerMiddleware(t *testing.T) {
@@ -40,7 +41,6 @@ func TestRequestLoggerMiddleware(t *testing.T) {
 		t.Error("Expected log output, got empty string")
 	}
 
-	
 	expectedFields := []string{"Request starting", "Request finished", "method", "uri", "status", "duration"}
 	for _, field := range expectedFields {
 		if !bytes.Contains([]byte(logOutput), []byte(field)) {
@@ -52,9 +52,7 @@ func TestRequestLoggerMiddleware(t *testing.T) {
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	userID := uuid.New()
 	token, err := auth.GenerateToken(userID)
-	if err != nil {
-		t.Fatalf("Failed to generate token: %v", err)
-	}
+	require.NoError(t, err)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctxUserID := r.Context().Value(UserIDKey)
@@ -128,9 +126,7 @@ func TestLoggingResponseWriter_Write(t *testing.T) {
 
 	data := []byte("test data")
 	n, err := lw.Write(data)
-	if err != nil {
-		t.Errorf("Write() error = %v", err)
-	}
+	require.NoError(t, err)
 
 	if n != len(data) {
 		t.Errorf("Write() returned %v bytes, want %v", n, len(data))
@@ -211,10 +207,7 @@ func TestGzipWriter_Write(t *testing.T) {
 
 	testData := []byte("test data")
 	n, err := gw.Write(testData)
-
-	if err != nil {
-		t.Errorf("Write() error = %v", err)
-	}
+	require.NoError(t, err)
 
 	if n != len(testData) {
 		t.Errorf("Write() returned %v bytes, want %v", n, len(testData))
@@ -229,16 +222,13 @@ func TestGzipMiddleware_CompressedRequest(t *testing.T) {
 	var receivedBody string
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatalf("Failed to read body: %v", err)
-		}
+		require.NoError(t, err)
 		receivedBody = string(body)
 		w.WriteHeader(http.StatusOK)
 	})
 
 	middleware := GzipMiddleware(handler)
 
-	
 	originalBody := "test request body"
 	var compressedBuf bytes.Buffer
 	gzWriter := gzip.NewWriter(&compressedBuf)
@@ -267,7 +257,6 @@ func TestGzipMiddleware_InvalidGzipRequest(t *testing.T) {
 
 	middleware := GzipMiddleware(handler)
 
-	
 	req := httptest.NewRequest(http.MethodPost, "/test", bytes.NewReader([]byte("not gzip data")))
 	req.Header.Set("Content-Encoding", "gzip")
 	w := httptest.NewRecorder()
@@ -290,7 +279,6 @@ func TestGzipMiddleware_GzipWriterError(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Accept-Encoding", "gzip")
 
-	
 	w := httptest.NewRecorder()
 
 	middleware.ServeHTTP(w, req)

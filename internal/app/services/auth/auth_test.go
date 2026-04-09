@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHashPassword(t *testing.T) {
@@ -57,9 +58,7 @@ func TestHashPassword(t *testing.T) {
 func TestCheckPassword(t *testing.T) {
 	password := "testpassword123"
 	hash, err := HashPassword(password)
-	if err != nil {
-		t.Fatalf("Failed to hash password: %v", err)
-	}
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
@@ -114,7 +113,6 @@ func TestGenerateToken(t *testing.T) {
 		t.Error("GenerateToken() returned empty token")
 	}
 
-	
 	validatedID, err := ValidateToken(token)
 	if err != nil {
 		t.Errorf("ValidateToken() error = %v", err)
@@ -176,7 +174,7 @@ func TestValidateToken(t *testing.T) {
 }
 
 func TestValidateToken_WrongSigningMethod(t *testing.T) {
-	
+
 	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -188,9 +186,7 @@ func TestValidateToken_WrongSigningMethod(t *testing.T) {
 	tokenString, _ := token.SignedString([]byte("fake-key"))
 
 	_, err := ValidateToken(tokenString)
-	if err == nil {
-		t.Error("Expected error for token with wrong signing method, got nil")
-	}
+	require.Error(t, err)
 }
 
 func TestGenerateRandomString(t *testing.T) {
@@ -215,12 +211,9 @@ func TestGenerateRandomString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GenerateRandomString(tt.length)
-			if err != nil {
-				t.Errorf("GenerateRandomString() error = %v", err)
-				return
-			}
+			require.NoError(t, err)
 
-			expectedLen := tt.length * 2 
+			expectedLen := tt.length * 2
 			if len(got) != expectedLen {
 				t.Errorf("GenerateRandomString() length = %v, want %v", len(got), expectedLen)
 			}
@@ -230,14 +223,10 @@ func TestGenerateRandomString(t *testing.T) {
 
 func TestGenerateRandomString_Uniqueness(t *testing.T) {
 	str1, err := GenerateRandomString(16)
-	if err != nil {
-		t.Fatalf("GenerateRandomString() error = %v", err)
-	}
+	require.NoError(t, err)
 
 	str2, err := GenerateRandomString(16)
-	if err != nil {
-		t.Fatalf("GenerateRandomString() error = %v", err)
-	}
+	require.NoError(t, err)
 
 	if str1 == str2 {
 		t.Error("GenerateRandomString() generated identical strings")
@@ -245,10 +234,10 @@ func TestGenerateRandomString_Uniqueness(t *testing.T) {
 }
 
 func TestValidateToken_ExpiredToken(t *testing.T) {
-	
+
 	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-24 * time.Hour)), 
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-24 * time.Hour)),
 		},
 		UserID: uuid.New(),
 	}
@@ -257,21 +246,17 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 	tokenString, _ := token.SignedString(jwtSecret)
 
 	_, err := ValidateToken(tokenString)
-	if err == nil {
-		t.Error("Expected error for expired token, got nil")
-	}
+	require.Error(t, err)
 }
 
 func TestValidateToken_InvalidTokenStructure(t *testing.T) {
-	
+
 	invalidToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp":    time.Now().Add(time.Hour).Unix(),
-		"userID": "not-a-uuid", 
+		"userID": "not-a-uuid",
 	})
 	tokenString, _ := invalidToken.SignedString(jwtSecret)
 
 	_, err := ValidateToken(tokenString)
-	if err == nil {
-		t.Error("Expected error for token with invalid UUID, got nil")
-	}
+	require.Error(t, err)
 }
