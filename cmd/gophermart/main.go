@@ -19,6 +19,13 @@ import (
 	"gophermart/internal/infrastructure/storage"
 )
 
+const (
+	serverReadTimeout     = 10 * time.Second
+	serverWriteTimeout    = 10 * time.Second
+	serverIdleTimeout     = 60 * time.Second
+	serverShutdownTimeout = 10 * time.Second
+)
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -52,9 +59,9 @@ func run() error {
 	server := &http.Server{
 		Addr:         cfg.RunAddress,
 		Handler:      router.Routes(logger),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  serverReadTimeout,
+		WriteTimeout: serverWriteTimeout,
+		IdleTimeout:  serverIdleTimeout,
 	}
 
 	if cfg.AccrualSystemAddress != "" {
@@ -80,7 +87,7 @@ func run() error {
 
 	logger.Info("shutting down server")
 
-	shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(ctx, serverShutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
