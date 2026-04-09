@@ -12,6 +12,7 @@ import (
 
 	"gophermart/internal/app/middleware"
 	"gophermart/internal/domain/models"
+	"gophermart/internal/infrastructure/storage"
 	"gophermart/internal/infrastructure/storage/mocks"
 
 	"github.com/google/uuid"
@@ -228,7 +229,7 @@ func TestWithdraw_InsufficientFunds(t *testing.T) {
 
 	mockStorage.EXPECT().
 		CreateWithdrawal(mock.Anything, userID, orderNumber, sum).
-		Return(errors.New("insufficient funds")).
+		Return(storage.ErrInsufficientFunds).
 		Once()
 
 	handler := NewBalanceHandler(mockStorage, logger)
