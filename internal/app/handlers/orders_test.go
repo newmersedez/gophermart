@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -42,7 +41,7 @@ func TestUploadOrder_Success(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(orderNumber)))
 	request.Header.Set("Content-Type", "text/plain")
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -65,7 +64,7 @@ func TestUploadOrder_InvalidLuhn(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(orderNumber)))
 	request.Header.Set("Content-Type", "text/plain")
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -101,7 +100,7 @@ func TestGetOrders_Success(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -128,7 +127,7 @@ func TestGetOrders_NoOrders(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -148,7 +147,7 @@ func TestUploadOrder_EmptyBody(t *testing.T) {
 	userID := uuid.New()
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte("")))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -177,7 +176,7 @@ func TestUploadOrder_AlreadyExistsSameUser(t *testing.T) {
 	handler := NewOrderHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(orderNumber)))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -207,7 +206,7 @@ func TestUploadOrder_AlreadyExistsDifferentUser(t *testing.T) {
 	handler := NewOrderHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(orderNumber)))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -234,7 +233,7 @@ func TestUploadOrder_GetOrderError(t *testing.T) {
 	handler := NewOrderHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(orderNumber)))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -266,7 +265,7 @@ func TestUploadOrder_CreateOrderError(t *testing.T) {
 	handler := NewOrderHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(orderNumber)))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -292,7 +291,7 @@ func TestGetOrders_Error(t *testing.T) {
 	handler := NewOrderHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -313,7 +312,7 @@ func TestUploadOrder_InvalidLuhnChecksum(t *testing.T) {
 	invalidOrderNumber := "123456789"
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(invalidOrderNumber)))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -334,7 +333,7 @@ func TestUploadOrder_ReadBodyError(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", nil)
 	request.Body = &errorReader{}
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 

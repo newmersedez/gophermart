@@ -89,7 +89,7 @@ func TestGetUserByLogin_NotFound(t *testing.T) {
 	ctx := context.Background()
 
 	user, err := storage.GetUserByLogin(ctx, "nonexistent")
-	require.ErrorIs(t, err, storage.ErrUserNotFound)
+	require.ErrorIs(t, err, ErrUserNotFound)
 	assert.Nil(t, user)
 }
 

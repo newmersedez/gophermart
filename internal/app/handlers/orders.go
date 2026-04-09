@@ -36,7 +36,11 @@ func NewOrderHandler(storage OrderStorage, logger *slog.Logger) *OrderHandler {
 }
 
 func (h *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -94,7 +98,11 @@ type OrderResponse struct {
 }
 
 func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	orders, err := h.storage.GetUserOrders(r.Context(), userID)
 	if err != nil {

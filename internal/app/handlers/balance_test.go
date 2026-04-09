@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -36,7 +35,7 @@ func TestGetBalance_Success(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/balance", nil)
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -63,7 +62,7 @@ func TestGetBalance_StorageError(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/balance", nil)
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -99,7 +98,7 @@ func TestWithdraw_Success(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", bytes.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -126,7 +125,7 @@ func TestWithdraw_InvalidLuhn(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", bytes.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -159,7 +158,7 @@ func TestGetWithdrawals_Success(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -186,7 +185,7 @@ func TestGetWithdrawals_NoWithdrawals(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
 
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -207,7 +206,7 @@ func TestWithdraw_InvalidJSON(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw",
 		bytes.NewReader([]byte("invalid json")))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -241,7 +240,7 @@ func TestWithdraw_InsufficientFunds(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", bytes.NewReader(body))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -275,7 +274,7 @@ func TestWithdraw_StorageError(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", bytes.NewReader(body))
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -301,7 +300,7 @@ func TestGetWithdrawals_Error(t *testing.T) {
 	handler := NewBalanceHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -326,7 +325,7 @@ func TestGetBalance_DatabaseError(t *testing.T) {
 	handler := NewBalanceHandler(mockStorage, logger)
 
 	request := httptest.NewRequest(http.MethodGet, "/api/user/balance", nil)
-	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
+	ctx := middleware.SetUserID(request.Context(), userID)
 	request = request.WithContext(ctx)
 	w := httptest.NewRecorder()
 

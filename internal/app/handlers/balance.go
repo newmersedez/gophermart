@@ -34,7 +34,11 @@ func NewBalanceHandler(storage BalanceStorage, logger *slog.Logger) *BalanceHand
 }
 
 func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	balance, err := h.storage.GetBalance(r.Context(), userID)
 	if err != nil {
@@ -56,7 +60,11 @@ type WithdrawRequest struct {
 }
 
 func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	var req WithdrawRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -90,7 +98,11 @@ type WithdrawalResponse struct {
 }
 
 func (h *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	withdrawals, err := h.storage.GetWithdrawals(r.Context(), userID)
 	if err != nil {
