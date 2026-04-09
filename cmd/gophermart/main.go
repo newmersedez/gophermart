@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -35,12 +36,12 @@ func run() error {
 	}))
 
 	if cfg.DatabaseURI == "" {
-		return fmt.Errorf("database URI is required")
+		return errors.New("database URI is required")
 	}
 
 	ctx := context.Background()
 	store, err := storage.NewStorage(ctx, cfg.DatabaseURI, logger)
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
