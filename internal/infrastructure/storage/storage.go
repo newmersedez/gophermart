@@ -17,6 +17,8 @@ import (
 )
 
 var ErrInsufficientFunds = errors.New("insufficient funds")
+var ErrUserNotFound = errors.New("user not found")
+var ErrOrderNotFound = errors.New("order not found")
 
 type StorageInterface interface {
 	Close() error
@@ -94,7 +96,7 @@ func (s *Storage) GetUserByLogin(ctx context.Context, login string) (*models.Use
 	err := s.pool.QueryRow(ctx, query, login).Scan(&user.ID, &user.Login, &user.PasswordHash, &user.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user by login '%s': %w", login, err)
 	}
@@ -119,7 +121,7 @@ func (s *Storage) GetOrderByNumber(ctx context.Context, number string) (*models.
 	err := s.pool.QueryRow(ctx, query, number).Scan(&order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, ErrOrderNotFound
 		}
 		return nil, fmt.Errorf("failed to get order by number '%s': %w", number, err)
 	}

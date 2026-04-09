@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 
 	"gophermart/internal/app/middleware"
+	"gophermart/internal/domain/models"
 	"gophermart/internal/infrastructure/storage"
 	"gophermart/internal/infrastructure/utils"
 
@@ -15,12 +17,18 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+type OrderStorage interface {
+	GetOrderByNumber(ctx context.Context, number string) (*models.Order, error)
+	CreateOrder(ctx context.Context, number string, userID uuid.UUID) error
+	GetUserOrders(ctx context.Context, userID uuid.UUID) ([]models.Order, error)
+}
+
 type OrderHandler struct {
-	storage storage.StorageInterface
+	storage OrderStorage
 	logger  *slog.Logger
 }
 
-func NewOrderHandler(storage storage.StorageInterface, logger *slog.Logger) *OrderHandler {
+func NewOrderHandler(storage OrderStorage, logger *slog.Logger) *OrderHandler {
 	return &OrderHandler{
 		storage: storage,
 		logger:  logger,
@@ -48,13 +56,13 @@ func (h *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	existingOrder, err := h.storage.GetOrderByNumber(r.Context(), orderNumber)
-	if err != nil {
+	if err != nil && !errors.Is(err, storage.ErrOrderNotFound) {
 		h.logger.Error("failed to get order", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	if existingOrder != nil {
+	if err == nil {
 		if existingOrder.UserID == userID {
 			w.WriteHeader(http.StatusOK)
 			return

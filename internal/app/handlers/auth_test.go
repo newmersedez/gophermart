@@ -11,6 +11,7 @@ import (
 
 	"gophermart/internal/app/services/auth"
 	"gophermart/internal/domain/models"
+	"gophermart/internal/infrastructure/storage"
 	"gophermart/internal/infrastructure/storage/mocks"
 
 	"github.com/google/uuid"
@@ -300,7 +301,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 
 	mockStorage.EXPECT().
 		GetUserByLogin(mock.Anything, "nonexistent").
-		Return(nil, nil).
+		Return(nil, storage.ErrUserNotFound).
 		Once()
 
 	handler := NewAuthHandler(mockStorage, logger)
@@ -326,7 +327,6 @@ func TestRegister_CreateUserStorageError(t *testing.T) {
 	logger := slog.Default()
 	mockStorage := mocks.NewMockStorageInterface(t)
 
-	
 	mockStorage.EXPECT().
 		CreateUser(mock.Anything, "testuser", mock.AnythingOfType("string")).
 		Return(uuid.Nil, errors.New("general database error")).

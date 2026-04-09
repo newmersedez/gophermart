@@ -5,10 +5,15 @@ import (
 	"net/http"
 
 	"gophermart/internal/app/middleware"
-	"gophermart/internal/infrastructure/storage"
 
 	"github.com/go-chi/chi/v5"
 )
+
+type Storage interface {
+	AuthStorage
+	OrderStorage
+	BalanceStorage
+}
 
 type Router struct {
 	authHandler    *AuthHandler
@@ -16,7 +21,7 @@ type Router struct {
 	balanceHandler *BalanceHandler
 }
 
-func NewRouter(storage storage.StorageInterface, logger *slog.Logger) *Router {
+func NewRouter(storage Storage, logger *slog.Logger) *Router {
 	return &Router{
 		authHandler:    NewAuthHandler(storage, logger),
 		orderHandler:   NewOrderHandler(storage, logger),

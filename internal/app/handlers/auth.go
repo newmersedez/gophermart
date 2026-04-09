@@ -1,23 +1,31 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 
 	"gophermart/internal/app/services/auth"
+	"gophermart/internal/domain/models"
 	"gophermart/internal/infrastructure/storage"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+type AuthStorage interface {
+	CreateUser(ctx context.Context, login, passwordHash string) (uuid.UUID, error)
+	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
+}
+
 type AuthHandler struct {
-	storage storage.StorageInterface
+	storage AuthStorage
 	logger  *slog.Logger
 }
 
-func NewAuthHandler(storage storage.StorageInterface, logger *slog.Logger) *AuthHandler {
+func NewAuthHandler(storage AuthStorage, logger *slog.Logger) *AuthHandler {
 	return &AuthHandler{
 		storage: storage,
 		logger:  logger,
@@ -91,12 +99,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.storage.GetUserByLogin(r.Context(), req.Login)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			return
+		}
 		h.logger.Error("failed to get user", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	if user == nil || !auth.CheckPassword(req.Password, user.PasswordHash) {
+	if !auth.CheckPassword(req.Password, user.PasswordHash) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}

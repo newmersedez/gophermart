@@ -12,6 +12,7 @@ import (
 
 	"gophermart/internal/app/middleware"
 	"gophermart/internal/domain/models"
+	"gophermart/internal/infrastructure/storage"
 	"gophermart/internal/infrastructure/storage/mocks"
 
 	"github.com/google/uuid"
@@ -28,7 +29,7 @@ func TestUploadOrder_Success(t *testing.T) {
 
 	mockStorage.EXPECT().
 		GetOrderByNumber(mock.Anything, orderNumber).
-		Return(nil, nil).
+		Return(nil, storage.ErrOrderNotFound).
 		Once()
 
 	mockStorage.EXPECT().
@@ -254,7 +255,7 @@ func TestUploadOrder_CreateOrderError(t *testing.T) {
 
 	mockStorage.EXPECT().
 		GetOrderByNumber(mock.Anything, orderNumber).
-		Return(nil, nil).
+		Return(nil, storage.ErrOrderNotFound).
 		Once()
 
 	mockStorage.EXPECT().
@@ -309,7 +310,7 @@ func TestUploadOrder_InvalidLuhnChecksum(t *testing.T) {
 	handler := NewOrderHandler(mockStorage, logger)
 
 	userID := uuid.New()
-	invalidOrderNumber := "123456789" 
+	invalidOrderNumber := "123456789"
 
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte(invalidOrderNumber)))
 	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
@@ -331,7 +332,6 @@ func TestUploadOrder_ReadBodyError(t *testing.T) {
 
 	userID := uuid.New()
 
-	
 	request := httptest.NewRequest(http.MethodPost, "/api/user/orders", nil)
 	request.Body = &errorReader{}
 	ctx := context.WithValue(request.Context(), middleware.UserIDKey, userID)
@@ -345,7 +345,6 @@ func TestUploadOrder_ReadBodyError(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
-
 
 type errorReader struct{}
 

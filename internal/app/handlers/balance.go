@@ -1,24 +1,32 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 
 	"gophermart/internal/app/middleware"
+	"gophermart/internal/domain/models"
 	"gophermart/internal/infrastructure/storage"
 	"gophermart/internal/infrastructure/utils"
 
 	"github.com/google/uuid"
 )
 
+type BalanceStorage interface {
+	GetBalance(ctx context.Context, userID uuid.UUID) (*models.Balance, error)
+	CreateWithdrawal(ctx context.Context, userID uuid.UUID, order string, sum float64) error
+	GetWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error)
+}
+
 type BalanceHandler struct {
-	storage storage.StorageInterface
+	storage BalanceStorage
 	logger  *slog.Logger
 }
 
-func NewBalanceHandler(storage storage.StorageInterface, logger *slog.Logger) *BalanceHandler {
+func NewBalanceHandler(storage BalanceStorage, logger *slog.Logger) *BalanceHandler {
 	return &BalanceHandler{
 		storage: storage,
 		logger:  logger,

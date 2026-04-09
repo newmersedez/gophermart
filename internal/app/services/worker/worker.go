@@ -8,17 +8,22 @@ import (
 
 	"gophermart/internal/domain/models"
 	"gophermart/internal/infrastructure/accrual"
-	"gophermart/internal/infrastructure/storage"
 )
 
+// WorkerStorage defines the storage methods required by Worker.
+type WorkerStorage interface {
+	GetPendingOrders(ctx context.Context) ([]models.Order, error)
+	UpdateOrderStatus(ctx context.Context, number, status string, accrual *float64) error
+}
+
 type Worker struct {
-	storage       storage.StorageInterface
+	storage       WorkerStorage
 	accrualClient accrual.AccrualClient
 	logger        *slog.Logger
 	interval      time.Duration
 }
 
-func NewWorker(storage storage.StorageInterface, accrualClient accrual.AccrualClient, logger *slog.Logger) *Worker {
+func NewWorker(storage WorkerStorage, accrualClient accrual.AccrualClient, logger *slog.Logger) *Worker {
 	return &Worker{
 		storage:       storage,
 		accrualClient: accrualClient,
