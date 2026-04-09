@@ -41,7 +41,6 @@ func run() error {
 
 	ctx := context.Background()
 	store, err := storage.NewStorage(ctx, cfg.DatabaseURI, logger)
-
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
