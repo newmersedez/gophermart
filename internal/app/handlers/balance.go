@@ -1,0 +1,133 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"net/http"
+
+	"gophermart/internal/app/middleware"
+	"gophermart/internal/domain/models"
+	"gophermart/internal/infrastructure/storage"
+	"gophermart/internal/infrastructure/utils"
+
+	"github.com/google/uuid"
+)
+
+type BalanceStorage interface {
+	GetBalance(ctx context.Context, userID uuid.UUID) (*models.Balance, error)
+	CreateWithdrawal(ctx context.Context, userID uuid.UUID, order string, sum float64) error
+	GetWithdrawals(ctx context.Context, userID uuid.UUID) ([]models.Withdrawal, error)
+}
+
+type BalanceHandler struct {
+	storage BalanceStorage
+	logger  *slog.Logger
+}
+
+func NewBalanceHandler(storage BalanceStorage, logger *slog.Logger) *BalanceHandler {
+	return &BalanceHandler{
+		storage: storage,
+		logger:  logger,
+	}
+}
+
+func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	balance, err := h.storage.GetBalance(r.Context(), userID)
+	if err != nil {
+		h.logger.Error("failed to get balance", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(balance); err != nil {
+		h.logger.Error("failed to encode response", "error", err)
+	}
+}
+
+type WithdrawRequest struct {
+	Order string  `json:"order"`
+	Sum   float64 `json:"sum"`
+}
+
+func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req WithdrawRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		return
+	}
+
+	if !utils.ValidateLuhn(req.Order) {
+		http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
+		return
+	}
+
+	err := h.storage.CreateWithdrawal(r.Context(), userID, req.Order, req.Sum)
+	if err != nil {
+		if errors.Is(err, storage.ErrInsufficientFunds) {
+			http.Error(w, "Insufficient funds", http.StatusPaymentRequired)
+			return
+		}
+		h.logger.Error("failed to create withdrawal", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+type WithdrawalResponse struct {
+	Order       string  `json:"order"`
+	Sum         float64 `json:"sum"`
+	ProcessedAt string  `json:"processed_at"`
+}
+
+func (h *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	withdrawals, err := h.storage.GetWithdrawals(r.Context(), userID)
+	if err != nil {
+		h.logger.Error("failed to get withdrawals", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if len(withdrawals) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	response := make([]WithdrawalResponse, 0, len(withdrawals))
+	for _, w := range withdrawals {
+		response = append(response, WithdrawalResponse{
+			Order:       w.Order,
+			Sum:         w.Sum,
+			ProcessedAt: w.ProcessedAt.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.logger.Error("failed to encode response", "error", err)
+	}
+}
